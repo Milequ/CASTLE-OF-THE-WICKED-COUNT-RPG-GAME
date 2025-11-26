@@ -1,0 +1,242 @@
+#!/usr/bin/python3
+
+# ===============================
+#   CASTLE OF THE WICKED COUNT
+# ===============================
+
+def show_instructions():
+    print("""
+Castle of the Wicked Count
+==========================
+Author: Milosz Fedorowicz
+==========================
+
+Commands:
+  go [direction]
+  get [item]
+  drop [item]
+  look
+  inventory
+  use [item]
+  quit
+""")
+
+
+def show_status():
+    print('\n---------------------------')
+    print(f'You are in the {current_room}')
+    print(f'Inventory: {inventory}')
+
+    room = rooms[current_room]
+
+    if room["items"]:
+        print("You see:", ", ".join(room["items"]))
+
+    if "locked" in room and room["locked"]:
+        print("A door here seems locked.")
+    print("---------------------------")
+
+
+# ===========================================
+#   CASTLE MAP (Simplified and Logical)
+# ===========================================
+
+rooms = {
+    "Entrance Hall": {
+        "description": "A grand hall with dusty chandeliers.",
+        "exits": {"north": "Great Staircase", "east": "Guard Room"},
+        "items": ["map"],
+        "locked": False
+    },
+
+    "Guard Room": {
+        "description": "A small stone room once used by guards.",
+        "exits": {"west": "Entrance Hall", "north": "Armory"},
+        "items": ["rusty sword"],
+        "locked": False
+    },
+
+    "Armory": {
+        "description": "Weapon racks line the walls.",
+        "exits": {"south": "Guard Room"},
+        "items": ["iron key"],
+        "locked": False
+    },
+
+    "Great Staircase": {
+        "description": "A massive staircase leading deeper into the castle.",
+        "exits": {"south": "Entrance Hall", "up": "Upper Landing", "north": "Dining Hall"},
+        "items": [],
+        "locked": False
+    },
+
+    "Dining Hall": {
+        "description": "A long table covered with rotting food.",
+        "exits": {"south": "Great Staircase", "east": "Kitchen"},
+        "items": ["silver goblet"],
+        "locked": False
+    },
+
+    "Kitchen": {
+        "description": "Dusty pots and pans hang from the ceiling.",
+        "exits": {"west": "Dining Hall"},
+        "items": ["loaf of bread"],
+        "locked": False
+    },
+
+    "Upper Landing": {
+        "description": "A balcony overlooking the Entrance Hall.",
+        "exits": {"down": "Great Staircase", "north": "Master Bedroom"},
+        "items": [],
+        "locked": True,      # requires IRON KEY
+        "key_required": "iron key"
+    },
+
+    "Master Bedroom": {
+        "description": "Lavish but decaying. A large bed dominates the room.",
+        "exits": {"south": "Upper Landing", "east": "Tower Stairs"},
+        "items": ["golden key"],
+        "locked": False
+    },
+
+    "Tower Stairs": {
+        "description": "A spiraling stairway up the tower.",
+        "exits": {"west": "Master Bedroom", "up": "Tower Peak"},
+        "items": [],
+        "locked": True,      # requires GOLDEN KEY
+        "key_required": "golden key"
+    },
+
+    "Tower Peak": {
+        "description": "Wind howls across the rooftop. You can see the entire land.",
+        "exits": {"down": "Tower Stairs"},
+        "items": ["ancient crown"],
+        "locked": False
+    }
+}
+
+# ===========================================
+#   GAME STATE
+# ===========================================
+
+current_room = "Entrance Hall"
+inventory = []
+
+
+# ===========================================
+#   MAIN GAME LOOP
+# ===========================================
+
+show_instructions()
+
+while True:
+    show_status()
+    command = input("> ").lower().split(" ", 1)
+
+    action = command[0]
+
+    # -----------------------------
+    #       GO COMMAND
+    # -----------------------------
+    if action == "go":
+        if len(command) == 1:
+            print("Go where?")
+            continue
+
+        direction = command[1]
+
+        if direction not in rooms[current_room]["exits"]:
+            print("You can't go that way.")
+            continue
+
+        next_room = rooms[current_room]["exits"][direction]
+
+        if "locked" in rooms[next_room] and rooms[next_room]["locked"]:
+            print("The door is locked.")
+            continue
+
+        current_room = next_room
+
+    # -----------------------------
+    #       GET ITEM
+    # -----------------------------
+    elif action == "get":
+        if len(command) == 1:
+            print("Get what?")
+            continue
+        item = command[1]
+
+        if item in rooms[current_room]["items"]:
+            rooms[current_room]["items"].remove(item)
+            inventory.append(item)
+            print(f"{item} obtained.")
+        else:
+            print(f"There is no {item} here.")
+
+    # -----------------------------
+    #       DROP ITEM
+    # -----------------------------
+    elif action == "drop":
+        if len(command) == 1:
+            print("Drop what?")
+            continue
+        item = command[1]
+
+        if item in inventory:
+            inventory.remove(item)
+            rooms[current_room]["items"].append(item)
+            print(f"{item} dropped.")
+        else:
+            print("You don't have that.")
+
+    # -----------------------------
+    #       LOOK AROUND
+    # -----------------------------
+    elif action == "look":
+        print(rooms[current_room]["description"])
+
+    # -----------------------------
+    #       SHOW INVENTORY
+    # -----------------------------
+    elif action == "inventory":
+        print("You carry:", inventory)
+
+    # -----------------------------
+    #       USE ITEM (unlocking)
+    # -----------------------------
+    elif action == "use":
+        if len(command) == 1:
+            print("Use what?")
+            continue
+
+        item = command[1]
+
+        if item not in inventory:
+            print("You don't have that item.")
+            continue
+
+        # Unlocking mechanic
+        for room_name, room_data in rooms.items():
+            if room_data.get("locked") and room_data.get("key_required") == item:
+                if current_room in room_data["exits"].values() or current_room in room_data["exits"].keys():
+                    room_data["locked"] = False
+                    print(f"You unlocked the door to the {room_name}.")
+                    break
+        else:
+            print("You can't use that here.")
+
+    # -----------------------------
+    #       QUIT
+    # -----------------------------
+    elif action == "quit":
+        print("You leave the castle...")
+        break
+
+    # -----------------------------
+    #      BILL MCKENTY EASTEREGG
+    # -----------------------------
+    elif action == "summon bill mackenty":
+        print("You have summoned Bill Mackenty and foudn an eaasteregg. Good Job!")
+
+    else:
+        print("Unknown command.")
